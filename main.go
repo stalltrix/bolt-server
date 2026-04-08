@@ -163,14 +163,19 @@ func handle(conn net.Conn) {
                 writeError(conn, "NOAUTH Authentication required.")
                 continue
             }
-			writeBulkString(conn, "PONG")
+			writeSimpleString(conn, "PONG")
 		
 		case "INFO":
 			if !authenticated {
                 writeError(conn, "NOAUTH Authentication required.")
                 continue
             }
-			writeBulkString(conn, "bolt-server v1.0 (https://github.com/stalltrix/bolt-server), dbPath on: "+ dbPath)
+			dbsize:="null"
+			fi, err := os.Stat(filepath.Join(dbPath,"sqlite.db"))
+			if err == nil {
+				dbsize=strconv.FormatInt(fi.Size(),10)
+			}
+			writeBulkString(conn, "# Server\r\nbolt-server:v1.0 (https://github.com/stalltrix/bolt-server)\r\n\r\n# Keyspace\r\nused_disk:"+dbsize+"\r\nused_disk_human:"+humanSize(fi.Size())+"\r\ndb_path:"+ dbPath+"\r\n\r\n")
 		default:
             writeError(conn, "ERR unknown command")
         }
@@ -284,4 +289,19 @@ func DirTest(dir string) bool {
 	temp.Close()
 	os.Remove(name)
 	return true
+}
+
+func humanSize(size int64) string {
+    const unit = 1024
+    if size < unit {
+        return strconv.FormatInt(size, 10) + " B"
+    }
+    div, exp := int64(unit), 0
+    for n := size / unit; n >= unit; n /= unit {
+        div *= unit
+        exp++
+    }
+    value := float64(size) / float64(div)
+    num := strconv.FormatFloat(value, 'f', 2, 64)
+    return num + " " + string("KMGTPE"[exp]) + "B"
 }
