@@ -1,9 +1,9 @@
-# bbolt-server
+# bolt-server
 
 [![Go Report Card](https://goreportcard.com/badge/go.etcd.io/bbolt?style=flat-square)](https://goreportcard.com/report/go.etcd.io/bbolt)
-[![Go Reference](https://pkg.go.dev/badge/go.etcd.io/bbolt.svg)](https://pkg.go.dev/go.etcd.io/bbolt)
-[![Releases](https://img.shields.io/github/release/etcd-io/bbolt/all.svg?style=flat-square)](https://github.com/etcd-io/bbolt/releases)
-[![LICENSE](https://img.shields.io/github/license/etcd-io/bbolt.svg?style=flat-square)](https://github.com/etcd-io/bbolt/blob/master/LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/stalltrix/bolt-server.svg)](https://pkg.go.dev/github.com/stalltrix/bolt-server)
+[![Releases](https://img.shields.io/github/v/release/stalltrix/bolt-server.svg?style=flat-square&include_prereleases)](https://github.com/stalltrix/bolt-server/releases)
+[![LICENSE](https://img.shields.io/github/license/stalltrix/bolt-server.svg?style=flat-square)](https://github.com/stalltrix/bolt-server/blob/master/LICENSE)
 
 
 bolt-server is a standalone KV server based on bbolt with RESP protocol
@@ -14,7 +14,7 @@ bolt-server is a standalone KV server based on bbolt with RESP protocol
 
 ```bash
 cd ~
-./bbolt tcp://127.0.0.1:6379 12345678
+./bolt-server tcp://127.0.0.1:6379 12345678
 ```
 
 ### connect with RESP protocol
@@ -70,7 +70,11 @@ import "github.com/redis/go-redis/v9"
 
 <br>
 
-=====
+----
+
+<br>
+
+### bbolt
 
 bbolt is a fork of [Ben Johnson's][gh_ben] [Bolt][bolt] key/value
 store. The purpose of this fork is to provide the Go community with an active
