@@ -1,4 +1,4 @@
-package bbolt_test
+package main_test
 
 import (
 	bolt "go.etcd.io/bbolt"

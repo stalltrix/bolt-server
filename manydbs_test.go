@@ -1,4 +1,4 @@
-package bbolt
+package main
 
 import (
 	"crypto/rand"
