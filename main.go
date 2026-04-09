@@ -69,7 +69,8 @@ func main() {
 func handle(conn net.Conn) {
     defer conn.Close()
 
-    reader := bufio.NewReader(conn)
+    nowdb:=[]byte{115,113,108}
+	reader := bufio.NewReader(conn)
     authenticated := false
 
     for {
@@ -114,7 +115,7 @@ func handle(conn net.Conn) {
 			
 			var errs error
 			db.Update(func(tx *Tx) error {
-				b, _ := tx.CreateBucketIfNotExists([]byte("sql"))
+				b, _ := tx.CreateBucketIfNotExists(nowdb)
 				errs=b.Put([]byte(args[1]), []byte(args[2]))
 				return errs
 			})
@@ -139,7 +140,7 @@ func handle(conn net.Conn) {
 			val:=""
 			
 			db.View(func(tx *Tx) error {
-				b := tx.Bucket([]byte("sql"))
+				b := tx.Bucket(nowdb)
 				if b == nil {
 					return nil
 				}
@@ -158,7 +159,68 @@ func handle(conn net.Conn) {
                 writeBulkString(conn, val)
             }
 
-        case "PING":
+		case "DEL":
+			if !authenticated {
+                writeError(conn, "NOAUTH Authentication required.")
+                continue
+            }
+
+            if len(args) != 2 {
+                writeError(conn, "ERR wrong number of arguments for 'del'")
+                continue
+            }
+			
+			var errs error
+			db.Update(func(tx *Tx) error {
+				b := tx.Bucket(nowdb)
+				if b == nil {
+					errs=errors.New("bucket not found")
+					return errs
+				}
+				errs=b.Delete([]byte(args[1]))
+				return errs
+			})
+			
+			if errs == nil {
+				io.WriteString(conn,":1\r\n")
+			} else {
+				writeError(conn, errs.Error())
+			}
+
+		case "HELLO":
+			if !authenticated {
+                writeError(conn, "NOAUTH Authentication required.")
+                continue
+            }
+			writeError(conn, "NOPROTO unsupported protocol version")
+
+        case "SELECT":
+			if !authenticated {
+                writeError(conn, "NOAUTH Authentication required.")
+                continue
+            }
+			
+			if len(args) != 2 {
+                writeError(conn, "ERR wrong number of arguments for 'select'")
+                continue
+            }
+			num,err:=strconv.Atoi(args[1])
+			if err!=nil{
+				 writeError(conn, "ERR value is not an integer or out of range")
+				 continue
+			}
+			if num<0||num>65535{
+				writeError(conn, "ERR value is not an integer or out of range")
+				continue
+			}
+			if num==0 {
+				num=29553
+			}
+			nowdb[0]=byte((num>>8)&255)
+			nowdb[1]=byte(num&255)
+			writeSimpleString(conn, "OK")
+			
+		case "PING":
 			if !authenticated {
                 writeError(conn, "NOAUTH Authentication required.")
                 continue
@@ -177,36 +239,12 @@ func handle(conn net.Conn) {
 			}
 			writeBulkString(conn, "# Server\r\nbolt-server:v1.0 (https://github.com/stalltrix/bolt-server)\r\n\r\n# Keyspace\r\nused_disk:"+dbsize+"\r\nused_disk_human:"+humanSize(fi.Size())+"\r\ndb_path:"+ dbPath+"\r\n\r\n")
 		
-		case "DEL":
+		default:
 			if !authenticated {
                 writeError(conn, "NOAUTH Authentication required.")
                 continue
             }
-
-            if len(args) != 2 {
-                writeError(conn, "ERR wrong number of arguments for 'del'")
-                continue
-            }
-			
-			var errs error
-			db.Update(func(tx *Tx) error {
-				b := tx.Bucket([]byte("sql"))
-				if b == nil {
-					errs=errors.New("bucket not found")
-					return errs
-				}
-				errs=b.Delete([]byte(args[1]))
-				return errs
-			})
-			
-			if errs == nil {
-				writeSimpleString(conn, "OK")
-			} else {
-				writeError(conn, errs.Error())
-			}
-		
-		default:
-            writeError(conn, "ERR unknown command")
+            writeError(conn, "ERR unknown command ''")
         }
     }
 }
