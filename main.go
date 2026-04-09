@@ -176,6 +176,35 @@ func handle(conn net.Conn) {
 				dbsize=strconv.FormatInt(fi.Size(),10)
 			}
 			writeBulkString(conn, "# Server\r\nbolt-server:v1.0 (https://github.com/stalltrix/bolt-server)\r\n\r\n# Keyspace\r\nused_disk:"+dbsize+"\r\nused_disk_human:"+humanSize(fi.Size())+"\r\ndb_path:"+ dbPath+"\r\n\r\n")
+		
+		case "DEL":
+			if !authenticated {
+                writeError(conn, "NOAUTH Authentication required.")
+                continue
+            }
+
+            if len(args) != 2 {
+                writeError(conn, "ERR wrong number of arguments for 'del'")
+                continue
+            }
+			
+			var errs error
+			db.Update(func(tx *Tx) error {
+				b := tx.Bucket([]byte("sql"))
+				if b == nil {
+					errs=errors.New("bucket not found")
+					return errs
+				}
+				errs=b.Delete([]byte(args[1]))
+				return errs
+			})
+			
+			if errs == nil {
+				writeSimpleString(conn, "OK")
+			} else {
+				writeError(conn, errs.Error())
+			}
+		
 		default:
             writeError(conn, "ERR unknown command")
         }
