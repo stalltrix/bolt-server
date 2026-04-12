@@ -21,7 +21,8 @@ var (
 func main() {
 	argc:=len(os.Args)
 	if argc <=2 {
-		log.Println("bolt-server [Listen](tcp://127.0.0.1:6379) [passwd]")
+		log.Println("bolt-server [Listen](tcp://127.0.0.1:6379) [passwd] [db_name](optional)\n")
+		log.Println("Set environment variables \"DB_HOME\" to specify the storage path.")
 		return
 	}
 	proto := strings.SplitN(os.Args[1], "://", 2)
@@ -35,12 +36,16 @@ func main() {
 	passwd=os.Args[2]
 	var err error
 	dbPath=findableDir()
+	if argc > 3 {
+	db, err = Open(filepath.Join(dbPath,os.Args[3]+".db"), 0600, nil)
+	}else{
 	db, err = Open(filepath.Join(dbPath,"sqlite.db"), 0600, nil)
-    defer db.Close()
+	}
 	if err!=nil {
 		log.Print(err)
 		return
 	}
+	defer db.Close()
 	
 	if len(passwd) <8 {
 		log.Print("ERR: password len < 8")
@@ -315,7 +320,12 @@ func writeNull(conn net.Conn) {
 }
 
 func findableDir() string {
-	home:=""
+	home:=os.Getenv("DB_HOME")
+	if home!=""{
+		if DirTest(home) {
+			return home
+		}
+	}
 	exePath, err := os.Executable()
 	if err == nil {
 		home = filepath.Dir(exePath)
